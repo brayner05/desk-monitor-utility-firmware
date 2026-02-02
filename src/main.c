@@ -133,11 +133,7 @@ static int impl_put_char(const char ch, FILE *stream __attribute__((unused))) {
     return 0;
 }
 
-ISR(INT0) {
-
-}
-
-int main(void) {
+static void gpio_init(void) {
     DDRB |= _BV(PIN_LCD_RS)
         | _BV(PIN_LCD_EN)
         | _BV(PIN_LCD_D4)
@@ -145,10 +141,12 @@ int main(void) {
         | _BV(PIN_LCD_D6)
         | _BV(PIN_LCD_D7);
 
-    DDRC &= ~_BV(PIN_TMP32_IN);;
+    DDRC &= ~_BV(PIN_TMP32_IN);
+}
+
+int main(void) {
+    gpio_init();
     display_init();
-
     printf("Hello World!\rNONONO");
-
     while (1);
 }
