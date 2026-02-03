@@ -18,7 +18,10 @@ set(CMAKE_ASM_COMPILER avr-gcc)
 set(CMAKE_C_FLAGS "-mmcu=${MCU} -DF_CPU=${F_CPU} -Os")
 set(CMAKE_EXE_LINKER_FLAGS "-mmcu=${MCU}")
 
-add_executable(${PROJECT_NAME}.elf src/main.c)
+set(SOURCES src/main.c
+        src/app_main.c)
+
+add_executable(${PROJECT_NAME}.elf ${SOURCES})
 
 add_custom_command(
         TARGET ${PROJECT_NAME}.elf

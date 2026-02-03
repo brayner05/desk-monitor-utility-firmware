@@ -3,14 +3,8 @@
 #include <util/delay.h>
 #include <stdio.h>
 #include <stdbool.h>
-
-#define PIN_LCD_D7      PB5
-#define PIN_LCD_D6      PB4
-#define PIN_LCD_D5      PB3
-#define PIN_LCD_D4      PB2
-#define PIN_LCD_EN      PB1
-#define PIN_LCD_RS      PB0
-#define PIN_TMP36_IN    PC0
+#include "pinout.h"
+#include "main.h"
 
 static int impl_put_char(char ch, FILE *stream __attribute__((unused)));
 static FILE display_stream_out = FDEV_SETUP_STREAM(impl_put_char, NULL, _FDEV_SETUP_WRITE); // NOLINT
@@ -77,11 +71,11 @@ static void display_execute(const uint8_t command) {
     }
 }
 
-static void display_clear(void) {
+extern void display_clear(void) {
     display_execute(0x01);
 }
 
-static void display_goto(const uint8_t col, const uint8_t row) {
+extern void display_goto(const uint8_t col, const uint8_t row) {
     const uint8_t clamped_column = col % 16;
     const uint8_t DDRAM_address = (row == 0 ? 0x00 : 0x40) + clamped_column;
     display_execute(CMD_DDRAM_AD_SET | DDRAM_address);
@@ -189,38 +183,29 @@ static void gpio_init(void) {
     DDRC &= ~_BV(PIN_TMP36_IN);
 }
 
-static volatile bool adc_ready = false;
+static volatile bool flag_adc_ready = false;
 ISR(TIMER1_COMPA_vect) {
-    adc_ready = true;
+    flag_adc_ready = true;
 }
 
-static void pretty_print_temperature(const float temp_celsius) {
-    const int lcd_width = 16;
-
-    int digits = 1;
-    if (temp_celsius >= 100.0)
-        digits = 3;
-    else if (temp_celsius >= 10.0)
-        digits = 2;
-
-    // Up to 3 digits + the degrees symbol + C:
-    const int start_column = lcd_width - (digits + 2);
-    display_goto(start_column, 0);
-    printf("%d%cC", (int) temp_celsius, (char) 223);
+extern bool tmp36_data_ready(void) {
+    return flag_adc_ready;
 }
+
+extern uint16_t tmp36_read(void) {
+    if (!flag_adc_ready)
+        return -1;
+    const uint8_t data = adc_read(PIN_TMP36_IN);
+    flag_adc_ready = false;
+    return data;
+}
+
+extern void app_main(void);
 
 int main(void) {
     gpio_init();
     timer1_init();
     adc_init();
     display_init();
-    while (1) {
-        if (adc_ready) {
-            const uint16_t tmp36_reading = adc_read(PIN_TMP36_IN);
-            const float tmp36_pin_voltage = tmp36_reading * 5.0 / 1023.0;
-            const float temperature_celsius = (tmp36_pin_voltage - 0.5) * 100.0;
-            pretty_print_temperature(temperature_celsius);
-            adc_ready = false;
-        }
-    }
+    app_main();
 }
