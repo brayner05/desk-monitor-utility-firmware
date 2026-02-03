@@ -2,6 +2,9 @@
 #define AVR_CMAKE_MAIN_H
 #include <stdbool.h>
 
+#define GLYPH_TEMPERATURE   1
+#define GLYPH_WIFI          2
+
 extern void display_clear(void);
 extern void display_goto(const uint8_t col, const uint8_t row);
 extern bool tmp36_data_ready(void);

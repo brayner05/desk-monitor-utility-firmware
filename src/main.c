@@ -200,12 +200,46 @@ extern uint16_t tmp36_read(void) {
     return data;
 }
 
+static uint8_t glyph_temperature[8] = {
+    0b00100,
+    0b00100,
+    0b00100,
+    0b00100,
+    0b00100,
+    0b01010,
+    0b01110,
+    0b00000,
+};
+
+static uint8_t glyph_wifi[8] = {
+    0b11111,
+    0b10001,
+    0b00000,
+    0b01110,
+    0b01010,
+    0b00000,
+    0b00100,
+    0b00000,
+};
+
 extern void app_main(void);
 
 int main(void) {
+    // Initialize submodules:
     gpio_init();
     timer1_init();
     adc_init();
     display_init();
+
+    /* Add custom glyphs to the display */
+    display_execute(CMD_CGRAM_AD_SET | (GLYPH_TEMPERATURE << 3));
+    for (uint8_t i = 0; i < 8; ++i)
+        display_send_byte(glyph_temperature[i], MODE_DATA);
+
+    display_execute(CMD_CGRAM_AD_SET | (GLYPH_WIFI << 3));
+    for (uint8_t i = 0; i < 8; ++i)
+        display_send_byte(glyph_wifi[i], MODE_DATA);
+
+    // Run app code:
     app_main();
 }

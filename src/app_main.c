@@ -10,13 +10,15 @@ static void pretty_print_temperature(const float temp_celsius) {
     else if (temp_celsius >= 10.0)
         digits = 2;
 
-    // Up to 3 digits + the degrees symbol + C:
-    const int start_column = lcd_width - (digits + 2);
+    // Up to 3 digits + the degrees symbol + C + temperature glyph:
+    const int start_column = lcd_width - (digits + 3);
     display_goto(start_column, 0);
-    printf("%d%cC", (int) temp_celsius, (char) 223);
+    printf("%c%d%cC", GLYPH_TEMPERATURE, (int) temp_celsius, (char) 223);
 }
 
 extern void app_main(void) {
+    display_goto(0, 0);
+    putchar(GLYPH_WIFI);
     while (1) {
         if (tmp36_data_ready()) {
             const uint16_t tmp36_reading = tmp36_read();
