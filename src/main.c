@@ -180,23 +180,37 @@ static void gpio_init(void) {
         | _BV(PIN_LCD_D6)
         | _BV(PIN_LCD_D7);
 
-    DDRC &= ~_BV(PIN_TMP36_IN);
+    DDRC &= ~_BV(PIN_TMP36_IN) & ~_BV(PIN_PHOTORESISTOR_IN);
 }
 
-static volatile bool flag_adc_ready = false;
+static volatile bool adc_tmp36_ready = false;
+static volatile bool adc_photoresistor_ready = false;
 ISR(TIMER1_COMPA_vect) {
-    flag_adc_ready = true;
+    adc_tmp36_ready = true;
+    adc_photoresistor_ready = true;
 }
 
 extern bool tmp36_data_ready(void) {
-    return flag_adc_ready;
+    return adc_tmp36_ready;
+}
+
+extern bool photoresistor_data_ready(void) {
+    return adc_photoresistor_ready;
 }
 
 extern uint16_t tmp36_read(void) {
-    if (!flag_adc_ready)
+    if (!adc_tmp36_ready)
         return -1;
     const uint8_t data = adc_read(PIN_TMP36_IN);
-    flag_adc_ready = false;
+    adc_tmp36_ready = false;
+    return data;
+}
+
+extern uint16_t photoresistor_read(void) {
+    if (!adc_photoresistor_ready)
+        return -1;
+    const uint8_t data = adc_read(PIN_PHOTORESISTOR_IN);
+    adc_photoresistor_ready = false;
     return data;
 }
 
@@ -205,19 +219,41 @@ static uint8_t glyph_temperature[8] = {
     0b00100,
     0b00100,
     0b00100,
-    0b00100,
+    0b01110,
     0b01010,
     0b01110,
     0b00000,
 };
 
 static uint8_t glyph_wifi[8] = {
-    0b11111,
-    0b10001,
     0b00000,
     0b01110,
+    0b10001,
+    0b00100,
     0b01010,
     0b00000,
+    0b00100,
+    0b00000,
+};
+
+static uint8_t glyph_clock[8] = {
+    0b01110,
+    0b10101,
+    0b10101,
+    0b10101,
+    0b10011,
+    0b10001,
+    0b01110,
+    0b00000,
+};
+
+static uint8_t glyph_brightness[8] = {
+    0b00100,
+    0b10101,
+    0b01110,
+    0b11111,
+    0b01110,
+    0b10101,
     0b00100,
     0b00000,
 };
@@ -239,6 +275,14 @@ int main(void) {
     display_execute(CMD_CGRAM_AD_SET | (GLYPH_WIFI << 3));
     for (uint8_t i = 0; i < 8; ++i)
         display_send_byte(glyph_wifi[i], MODE_DATA);
+
+    display_execute(CMD_CGRAM_AD_SET | (GLYPH_CLOCK << 3));
+    for (uint8_t i = 0; i < 8; ++i)
+        display_send_byte(glyph_clock[i], MODE_DATA);
+
+    display_execute(CMD_CGRAM_AD_SET | (GLYPH_BRIGHTNESS << 3));
+    for (uint8_t i = 0; i < 8; ++i)
+        display_send_byte(glyph_brightness[i], MODE_DATA);
 
     // Run app code:
     app_main();
